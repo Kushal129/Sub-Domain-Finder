@@ -129,8 +129,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-# Add User-Agent Header: Some websites might block requests without a User-Agent header. Adding a custom User-Agent can help avoid such blocks.
-# Support for HTTP and HTTPS: Your script currently assumes all URLs are https. Allowing the user to choose between http and https might be beneficial.
-# Progress Indicator: Adding a simple progress indicator to inform the user how many subdomains have been processed.
-# Improved Error Handling: Adding more granular error handling for different types of network 
