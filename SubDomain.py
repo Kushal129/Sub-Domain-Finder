@@ -16,6 +16,9 @@ YELLOW = "\033[0;33m"
 
 HYPERLINK = "\033]8;;{url}\033\\{text}\033]8;;\033\\"
 
+
+DEFAULT_SUBDOMAINS_URL = "https://github.com/Kushal129/Sub-Domain-Finder/raw/main/Subdomain.txt"
+
 # Setup logging
 logging.basicConfig(filename="subdomain_finder.log", level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
@@ -85,25 +88,44 @@ def intro():
     print(f"{BYELLOW}{title_line}{RESET}")
     print(f"{BYELLOW}{subtitle_line}{RESET}")
     print(f"{GREEN}{border}{RESET}\n")
+    
+def download_default_subdomains_file(file_path):
+    try:
+        response = requests.get(DEFAULT_SUBDOMAINS_URL)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        with open(file_path, "w") as file:
+            file.write(response.text)
+        print(f"{GREEN}[+] Default subdomains file downloaded and saved to {file_path}{RESET}")
+    except requests.RequestException as e:
+        print(f"{RED}[-] Failed to download default subdomains file: {e}{RESET}")
+        sys.exit(1)
 
 def main():
     intro()
     try:
         target_url = input("Enter Target URL (e.g., example.com): ").strip()
-        subdomains_file = input("Enter path to subdomains file (e.g., Subdomain.txt): ").strip()
-        protocol = input("Choose protocol (http [Enter-1] or https [Enter-2]): ").strip()
-
         if not target_url:
             print(f"{RED}[-] No target URL provided.{RESET}")
             sys.exit(1)
-                    
-        if protocol == '1':
-            protocol = "http"
-        elif protocol == '2':
-            protocol = "https"
+
+        # Set default subdomains file path
+        subdomains_file = "default_subdomains.txt"
+
+        # Check if the default subdomains file already exists
+        if os.path.isfile(subdomains_file):
+            print(f"{GREEN}Using existing subdomains file: '{subdomains_file}'{RESET}")
         else:
-            print(f"{YELLOW}[-] Invalid choice. Defaulting to https.{RESET}")
-            protocol = "https"
+            print(f"{YELLOW}Default subdomains file not found.{RESET}")
+            # Option to choose between custom subdomains file or default file
+            choice = input("Choose an option:\n1. Provide your own subdomains file\n2. Download default subdomains file\nEnter choice (1 or 2): ").strip()
+
+            if choice == '1':
+                subdomains_file = input("Enter path to subdomains file (e.g., Subdomain.txt): ").strip()
+            elif choice == '2':
+                download_default_subdomains_file(subdomains_file)
+            else:
+                print(f"{YELLOW}[-] Invalid choice. Defaulting to using the default subdomains file.{RESET}")
+                download_default_subdomains_file(subdomains_file)
 
         # Expand user directory
         subdomains_file = os.path.expanduser(subdomains_file)
@@ -114,6 +136,15 @@ def main():
 
         print(f"Using subdomains file: '{subdomains_file}'")
         discovered_subdomains = []
+
+        protocol = input("Choose protocol (http [Enter-1] or https [Enter-2]): ").strip()
+        if protocol == '1':
+            protocol = "http"
+        elif protocol == '2':
+            protocol = "https"
+        else:
+            print(f"{YELLOW}[-] Invalid choice. Defaulting to https.{RESET}")
+            protocol = "https"
 
         with open(subdomains_file, "r") as wordlist:
             subdomains = [f"{protocol}://{line.strip()}.{target_url}" for line in wordlist]
@@ -134,12 +165,10 @@ def main():
             logging.info("No subdomains discovered.")
 
     except KeyboardInterrupt:
-        # Graceful exit on KeyboardInterrupt
+       
         print(f"\n{YELLOW}[!] Interrupted! Exiting gracefully.{RESET}")
-        logging.info("Process interrupted by user.")
     except Exception as e:
         print(f"{RED}[-] An unexpected error occurred: {e}{RESET}")
-        logging.error(f"An unexpected error occurred: {e}")
     finally:
         print(f"\n{GREEN}Goodbye!{RESET}")
 
