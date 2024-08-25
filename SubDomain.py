@@ -1,6 +1,8 @@
 import requests
 import sys
 import os
+import signal
+import logging
 
 # Define color codes
 WHITE = "\033[0;37m"
@@ -14,6 +16,16 @@ YELLOW = "\033[0;33m"
 
 HYPERLINK = "\033]8;;{url}\033\\{text}\033]8;;\033\\"
 
+# Setup logging
+logging.basicConfig(filename="subdomain_finder.log", level=logging.INFO,
+                    format="%(asctime)s - %(levelname)s - %(message)s")
+
+# Signal handler for graceful exit
+def signal_handler(sig, frame):
+    print(f"\n{YELLOW}[!] Interrupted! Exiting gracefully.{RESET}")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 def request(url):
     headers = {
@@ -29,17 +41,19 @@ def request(url):
                 f"{GREEN}{'-' * 50}{RESET}\n"
             )
             print(output)
-
-            # return url  # Return the URL for saving to a file
+            logging.info(f"Subdomain discovered: {url}")
         else:
             print(f"{RED}[-] Non-200 status code for ----> {url}{RESET}")
+            logging.info(f"Non-200 status code for {url}")
     except requests.ConnectionError:
         print(f"{RED}[-] Connection Error for ----> {url}{RESET}")
+        logging.error(f"Connection Error for {url}")
     except requests.Timeout:
         print(f"{RED}[-] Timeout Error for ----> {url}{RESET}")
+        logging.error(f"Timeout Error for {url}")
     except requests.RequestException:
         print(f"{RED}[-] Failed to request ----> {url}{RESET}")
-    return None
+        logging.error(f"Failed to request {url}")
 
 def intro():
     border = "*" * 55
@@ -48,16 +62,16 @@ def intro():
     
     # ASCII Art for KHP Logo (Text Representation)
     khp_logo = """
-        
-        /$$   /$$ /$$   /$$ /$$$$$$$ 
+    
+         /$$   /$$ /$$   /$$ /$$$$$$$ 
         | $$  /$$/| $$  | $$| $$__  $$
         | $$ /$$/ | $$  | $$| $$  \ $$
         | $$$$$/  | $$$$$$$$| $$$$$$$/
         | $$  $$  | $$__  $$| $$____/ 
         | $$\  $$ | $$  | $$| $$      
         | $$ \  $$| $$  | $$| $$      
-        |__/  \__/|__/  |__/|__/      
-
+        |__/  \__/|__/  |__/|__/  
+           
     """
 
     # Centering the title and subtitle
@@ -106,9 +120,7 @@ def main():
 
         for index, subdomain in enumerate(subdomains, start=1):
             print(f"[*] Checking {index}/{len(subdomains)}: {subdomain}")
-            discovered = request(subdomain)
-            if discovered:
-                discovered_subdomains.append(discovered)
+            request(subdomain)
         
         if discovered_subdomains:
             output_file = f"discovered_subdomains_{target_url}.txt"
@@ -116,16 +128,20 @@ def main():
                 for subdomain in discovered_subdomains:
                     f.write(subdomain + "\n")
             print(f"{GREEN}[+] Discovered subdomains saved to {output_file}{RESET}")
+            logging.info(f"Discovered subdomains saved to {output_file}")
         else:
             print(f"{RED}[-] No subdomains discovered.{RESET}")
+            logging.info("No subdomains discovered.")
 
     except KeyboardInterrupt:
+        # Graceful exit on KeyboardInterrupt
         print(f"\n{YELLOW}[!] Interrupted! Exiting gracefully.{RESET}")
+        logging.info("Process interrupted by user.")
     except Exception as e:
         print(f"{RED}[-] An unexpected error occurred: {e}{RESET}")
+        logging.error(f"An unexpected error occurred: {e}")
     finally:
         print(f"\n{GREEN}Goodbye!{RESET}")
 
 if __name__ == "__main__":
     main()
-
